@@ -5,6 +5,6 @@ authors = ["Patrick Elsen <pelsen@xfbs.net>"]
 edition = "2018"
 
 [dependencies]
-hyper = "0.12"
+reqwest = "0.9.17"
 serde = "1.0.91"
 serde-xml-rs = "0.3.1"
