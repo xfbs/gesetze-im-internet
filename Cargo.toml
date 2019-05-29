@@ -1,0 +1,10 @@
+[package]
+name = "lawapi-de"
+version = "0.1.0"
+authors = ["Patrick Elsen <pelsen@xfbs.net>"]
+edition = "2018"
+
+[dependencies]
+hyper = "0.12"
+serde = "1.0.91"
+serde-xml-rs = "0.3.1"
