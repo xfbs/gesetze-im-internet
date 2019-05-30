@@ -46,19 +46,27 @@ impl TocItem {
         let mut archive = zip::ZipArchive::new(reader)?;
 
         for i in 0..archive.len() {
-            let mut file = archive.by_index(i).unwrap();
+            let file = archive.by_index(i).unwrap();
             println!("Filename: {}", file.name());
             let first_byte = file.bytes().next().unwrap()?;
             println!("{}", first_byte);
         }
 
-        Ok(String::new())
+        debug_assert!(archive.len() == 1);
+
+        let mut file = archive.by_index(0).unwrap();
+
+        let mut content = String::new();
+        file.read_to_string(&mut content)?;
+
+        Ok(content)
     }
 
     pub fn short(&self) -> Option<&str> {
-        // FIXME: make this static.
-        let regex = Regex::new(r"^http://www.gesetze-im-internet.de/(.+)/xml.zip$").unwrap();
-        regex
+        lazy_static! {
+            static ref REGEX: Regex = Regex::new(r"^http://www.gesetze-im-internet.de/(.+)/xml.zip$").unwrap();
+        }
+        REGEX
             .captures(&self.link)
             .and_then(|c| c.get(1).map(|s| s.as_str()))
     }
@@ -67,12 +75,19 @@ impl TocItem {
 impl Toc {
     /// Fetch the current table of contents from the server.
     pub fn fetch_toc() -> Result<String, Box<::std::error::Error>> {
-        reqwest::get(API_TOC)?.text().map_err(|e| e.into())
+        println!("fetching toc...");
+        let response = reqwest::get(API_TOC)?.text().map_err(|e| e.into());
+        println!("got response.");
+        response
     }
 
     /// Fetch the current table of contents from the server and parse it, yielding a Toc.
     pub fn fetch() -> Result<Self, Box<::std::error::Error>> {
-        Self::fetch_toc().and_then(|s| serde_xml_rs::from_str(&s).map_err(|e| e.into()))
+        let toc = Self::fetch_toc();
+        println!("parsing xml...");
+        let toc = toc.and_then(|s| serde_xml_rs::from_str(&s).map_err(|e| e.into()));
+        println!("done parsing xml.");
+        toc
     }
 }
 

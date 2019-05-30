@@ -21,7 +21,11 @@ fn main() {
         )
         .subcommand(
             SubCommand::with_name("get")
-                .about("gets a law with the specified short id"),
+                .about("gets a law with the specified short id")
+                .arg(Arg::with_name("ID")
+                     .help("which law to fetch")
+                     .required(true)
+                     .index(1)),
         )
         .get_matches();
 
@@ -55,10 +59,18 @@ fn list(matches: Option<&ArgMatches>) {
 
 fn get(matches: Option<&ArgMatches>) {
     let toc = Toc::fetch();
+    let name = matches.unwrap().value_of("ID").unwrap();
 
     match toc {
         Ok(toc) => {
-            ()
+            let law = toc.items.iter().find(|ref i| i.short().unwrap() == name);
+
+            if let Some(law) = law {
+                match law.fetch() {
+                    Ok(law) => println!("{}", law),
+                    Err(e) => println!("{:?}", e),
+                }
+            }
         },
         Err(e) => println!("{:?}", e)
     }
