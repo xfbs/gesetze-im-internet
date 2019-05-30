@@ -1,8 +1,10 @@
+extern crate regex;
 extern crate reqwest;
 extern crate serde;
 extern crate serde_xml_rs;
 extern crate zip;
 
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::io::prelude::*;
 
@@ -23,7 +25,7 @@ pub struct TocItem {
 pub struct Toc {
     /// List of items.
     #[serde(rename = "item", default)]
-    pub items: Vec<TocItem>
+    pub items: Vec<TocItem>,
 }
 
 impl TocItem {
@@ -52,6 +54,14 @@ impl TocItem {
 
         Ok(String::new())
     }
+
+    pub fn short(&self) -> Option<&str> {
+        // FIXME: make this static.
+        let regex = Regex::new(r"^http://www.gesetze-im-internet.de/(.+)/xml.zip$").unwrap();
+        regex
+            .captures(&self.link)
+            .and_then(|c| c.get(1).map(|s| s.as_str()))
+    }
 }
 
 impl Toc {
@@ -62,8 +72,7 @@ impl Toc {
 
     /// Fetch the current table of contents from the server and parse it, yielding a Toc.
     pub fn fetch() -> Result<Self, Box<::std::error::Error>> {
-        Self::fetch_toc()
-            .and_then(|s| serde_xml_rs::from_str(&s).map_err(|e| e.into()))
+        Self::fetch_toc().and_then(|s| serde_xml_rs::from_str(&s).map_err(|e| e.into()))
     }
 }
 
@@ -79,11 +88,11 @@ fn test_can_compare_toc_item() {
     let gesetz_a = TocItem::new("A", "A");
     let gesetz_b = TocItem::new("B", "A");
     let gesetz_c = TocItem::new("A", "C");
-    
+
     assert_ne!(gesetz_a, gesetz_b);
     assert_ne!(gesetz_a, gesetz_c);
     assert_ne!(gesetz_b, gesetz_c);
-    
+
     assert_eq!(gesetz_a, gesetz_a);
     assert_eq!(gesetz_b, gesetz_b);
     assert_eq!(gesetz_c, gesetz_c);
