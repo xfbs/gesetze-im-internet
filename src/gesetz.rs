@@ -7,6 +7,7 @@ extern crate zip;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::io::prelude::*;
+use log::{info, trace, warn};
 
 /// API endpoint to get current table of contents.
 const API_TOC: &'static str = "https://www.gesetze-im-internet.de/gii-toc.xml";
@@ -39,7 +40,9 @@ impl TocItem {
 
     /// Fetch this law.
     pub fn fetch(&self) -> Result<String, Box<::std::error::Error>> {
+        info!("fetching {}", &self.link);
         let mut response = reqwest::get(&self.link)?;
+        info!("got response");
         let mut body = Vec::new();
         response.read_to_end(&mut body)?;
         let reader = std::io::Cursor::new(body);
@@ -75,18 +78,18 @@ impl TocItem {
 impl Toc {
     /// Fetch the current table of contents from the server.
     pub fn fetch_toc() -> Result<String, Box<::std::error::Error>> {
-        println!("fetching toc...");
+        info!("fetching toc");
         let response = reqwest::get(API_TOC)?.text().map_err(|e| e.into());
-        println!("got response.");
+        info!("got response");
         response
     }
 
     /// Fetch the current table of contents from the server and parse it, yielding a Toc.
     pub fn fetch() -> Result<Self, Box<::std::error::Error>> {
         let toc = Self::fetch_toc();
-        println!("parsing xml...");
+        info!("parsing xml...");
         let toc = toc.and_then(|s| serde_xml_rs::from_str(&s).map_err(|e| e.into()));
-        println!("done parsing xml.");
+        info!("done parsing xml.");
         toc
     }
 }

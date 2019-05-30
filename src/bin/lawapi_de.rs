@@ -1,6 +1,7 @@
 extern crate clap;
 extern crate lawapi_de;
 extern crate regex;
+extern crate stderrlog;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use lawapi_de::gesetz::{Toc};
@@ -9,6 +10,15 @@ use regex::Regex;
 fn main() {
     let matches = App::new("lawapi_de")
         .setting(AppSettings::ArgRequiredElseHelp)
+        .arg(Arg::with_name("verbosity")
+             .short("v")
+             .long("verbose")
+             .multiple(true)
+             .help("Increase message verbosity"))
+        .arg(Arg::with_name("quiet")
+             .short("q")
+             .long("quiet")
+             .help("Silence all output"))
         .subcommand(
             SubCommand::with_name("list")
                 .about("lists laws by fetching the table of contents")
@@ -29,6 +39,18 @@ fn main() {
         )
         .get_matches();
 
+    // setup logging.
+    let verbose = matches.occurrences_of("verbosity") as usize;
+    let quiet = matches.is_present("quiet");
+
+    stderrlog::new()
+        .module(module_path!())
+        .quiet(quiet)
+        .verbosity(verbose)
+        .init()
+        .unwrap();
+
+    // run subcommands.
     match matches.subcommand() {
         ("list", a) => list(a),
         ("get", a) => get(a),
