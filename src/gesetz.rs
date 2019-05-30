@@ -1,8 +1,10 @@
 extern crate reqwest;
 extern crate serde;
 extern crate serde_xml_rs;
+extern crate zip;
 
 use serde::{Deserialize, Serialize};
+use std::io::prelude::*;
 
 /// API endpoint to get current table of contents.
 const API_TOC: &'static str = "https://www.gesetze-im-internet.de/gii-toc.xml";
@@ -31,6 +33,24 @@ impl TocItem {
             title: title.into(),
             link: link.into(),
         }
+    }
+
+    /// Fetch this law.
+    pub fn fetch(&self) -> Result<String, Box<::std::error::Error>> {
+        let mut response = reqwest::get(&self.link)?;
+        let mut body = Vec::new();
+        response.read_to_end(&mut body)?;
+        let reader = std::io::Cursor::new(body);
+        let mut archive = zip::ZipArchive::new(reader)?;
+
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i).unwrap();
+            println!("Filename: {}", file.name());
+            let first_byte = file.bytes().next().unwrap()?;
+            println!("{}", first_byte);
+        }
+
+        Ok(String::new())
     }
 }
 
