@@ -1,5 +1,3 @@
-#[macro_use] extern crate lazy_static;
-
 mod toc;
 
 pub use toc::{Toc, TocItem};
