@@ -1,4 +1,11 @@
-enum Error {
+use futures::{Future, IntoFuture};
+use log::info;
+use url::Url;
+use reqwest::r#async::{Client as ReqwestClient, Response};
+use std::fmt;
+
+#[derive(Debug)]
+pub enum Error {
     ReqwestError(reqwest::Error),
     UrlParseError(url::ParseError),
 }
@@ -15,29 +22,33 @@ impl From<url::ParseError> for Error {
     }
 }
 
-use futures::{Future, IntoFuture};
-use log::info;
-use url::Url;
-use reqwest::r#async::{Client as ReqwestClient, Response};
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 
-#[derive(Clone)]
-struct HttpClient {
+impl std::error::Error for Error {
+}
+
+#[derive(Debug, Clone)]
+pub struct Client {
     base_url: Url,
     reqwest: ReqwestClient,
 }
 
-impl HttpClient {
-    fn new(
+impl Client {
+    pub fn new(
         base_url: Url,
         reqwest: ReqwestClient,
     ) -> Self {
-        HttpClient {
+        Client {
             base_url,
             reqwest,
         }
     }
 
-    fn get(&self, path: &str) -> impl Future<Item = Response, Error = Error> {
+    pub fn get(&self, path: &str) -> impl Future<Item = Response, Error = Error> {
         let request_url = self.base_url.join(path);
         let client = self.reqwest.clone();
 
@@ -55,7 +66,7 @@ impl HttpClient {
             .map_err(Error::from)
     }
 
-    fn base_url(&self) -> &Url {
+    pub fn base_url(&self) -> &Url {
         &self.base_url
     }
 }
