@@ -129,3 +129,9 @@ fn test_can_compare_toc_item() {
     assert_eq!(gesetz_b, gesetz_b);
     assert_eq!(gesetz_c, gesetz_c);
 }
+
+#[test]
+fn test_can_parse_short() {
+    let item = TocItem::new("Gesetz", "http://www.gesetze-im-internet.de/1-dm-goldm_nzg/xml.zip");
+    assert_eq!(item.short(), Some("1-dm-goldm_nzg"));
+}
