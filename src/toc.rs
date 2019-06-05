@@ -1,10 +1,3 @@
-extern crate lazy_static;
-extern crate regex;
-extern crate reqwest;
-extern crate serde;
-extern crate serde_xml_rs;
-extern crate zip;
-
 use lazy_static::lazy_static;
 use log::info;
 use regex::Regex;
