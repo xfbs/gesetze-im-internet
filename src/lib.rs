@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests;
 
+mod http_client;
 mod gesetz;
 mod toc;
 
