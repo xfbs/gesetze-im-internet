@@ -6,7 +6,7 @@ extern crate serde_xml_rs;
 extern crate zip;
 
 use lazy_static::lazy_static;
-use log::{info, trace, warn};
+use log::info;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::io::prelude::*;
@@ -67,6 +67,7 @@ impl TocItem {
         Ok(content)
     }
 
+    /// Extract law abbreviation from URL.
     pub fn short(&self) -> Option<&str> {
         lazy_static! {
             static ref REGEX: Regex =
