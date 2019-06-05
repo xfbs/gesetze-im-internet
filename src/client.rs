@@ -1,5 +1,5 @@
 use futures::{Future, IntoFuture};
-use log::info;
+use log::{info, debug};
 use reqwest::r#async::{Client as ReqwestClient, Response};
 use std::fmt;
 use url::Url;
@@ -68,9 +68,9 @@ impl Client {
 
         for i in 0..archive.len() {
             let file = archive.by_index(i).unwrap();
-            println!("Filename: {}", file.name());
+            debug!("Filename: {}", file.name());
             let first_byte = file.bytes().next().unwrap()?;
-            println!("{}", first_byte);
+            debug!("{}", first_byte);
         }
 
         debug_assert!(archive.len() == 1);
