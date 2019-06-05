@@ -95,6 +95,16 @@ impl Toc {
         info!("done parsing xml.");
         toc
     }
+
+    /// Load table of contents from string.
+    pub fn from_str(input: &str) -> Result<Self, serde_xml_rs::Error> {
+        serde_xml_rs::from_str(input)
+    }
+
+    /// Create new empty table of contents
+    pub fn new() -> Self {
+        Toc { items: Vec::new() }
+    }
 }
 
 #[test]
