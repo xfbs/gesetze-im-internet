@@ -4,7 +4,7 @@ extern crate regex;
 extern crate stderrlog;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use lawapi_de::gesetz::{Toc};
+use lawapi_de::{Toc};
 use regex::Regex;
 
 fn main() {
