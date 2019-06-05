@@ -4,7 +4,9 @@ const TOC: &'static str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/dat
 
 #[test]
 fn test_load_toc() {
-    let toc = Toc::from_str(TOC).expect("can't parse toc");
+    for _ in 0..10 {
+        let toc = Toc::from_str(TOC).expect("can't parse toc");
 
-    assert_eq!(toc.items.len(), 6419);
+        assert_eq!(toc.items.len(), 6419);
+    }
 }
