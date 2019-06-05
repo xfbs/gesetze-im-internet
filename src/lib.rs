@@ -2,8 +2,7 @@ mod toc;
 
 pub use toc::{Toc, TocItem};
 
-pub struct Gesetze {
-}
+pub struct Gesetze {}
 
 #[cfg(test)]
 mod tests {

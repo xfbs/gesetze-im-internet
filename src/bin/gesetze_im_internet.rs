@@ -4,38 +4,46 @@ extern crate regex;
 extern crate stderrlog;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use gesetze_im_internet::{Toc};
+use gesetze_im_internet::Toc;
 use regex::Regex;
 
 fn main() {
     let matches = App::new("lawapi_de")
         .setting(AppSettings::ArgRequiredElseHelp)
-        .arg(Arg::with_name("verbosity")
-             .short("v")
-             .long("verbose")
-             .multiple(true)
-             .help("Increase message verbosity"))
-        .arg(Arg::with_name("quiet")
-             .short("q")
-             .long("quiet")
-             .help("Silence all output"))
+        .arg(
+            Arg::with_name("verbosity")
+                .short("v")
+                .long("verbose")
+                .multiple(true)
+                .help("Increase message verbosity"),
+        )
+        .arg(
+            Arg::with_name("quiet")
+                .short("q")
+                .long("quiet")
+                .help("Silence all output"),
+        )
         .subcommand(
             SubCommand::with_name("list")
                 .about("lists laws by fetching the table of contents")
-                .arg(Arg::with_name("search")
-                     .short("s")
-                     .long("search")
-                     .help("searches for a string")
-                     .value_name("REGEX")
-                     .takes_value(true))
+                .arg(
+                    Arg::with_name("search")
+                        .short("s")
+                        .long("search")
+                        .help("searches for a string")
+                        .value_name("REGEX")
+                        .takes_value(true),
+                ),
         )
         .subcommand(
             SubCommand::with_name("get")
                 .about("gets a law with the specified short id")
-                .arg(Arg::with_name("ID")
-                     .help("which law to fetch")
-                     .required(true)
-                     .index(1)),
+                .arg(
+                    Arg::with_name("ID")
+                        .help("which law to fetch")
+                        .required(true)
+                        .index(1),
+                ),
         )
         .get_matches();
 
@@ -70,11 +78,15 @@ fn list(matches: Option<&ArgMatches>) {
             };
 
             for item in toc.items {
-                if regex.as_ref().map(|r| r.is_match(&item.title)).unwrap_or(true) {
+                if regex
+                    .as_ref()
+                    .map(|r| r.is_match(&item.title))
+                    .unwrap_or(true)
+                {
                     println!("[{}] {}", item.short().unwrap_or("???"), item.title);
                 }
             }
-        },
+        }
         Err(e) => println!("{:?}", e),
     }
 }
@@ -93,7 +105,7 @@ fn get(matches: Option<&ArgMatches>) {
                     Err(e) => println!("{:?}", e),
                 }
             }
-        },
-        Err(e) => println!("{:?}", e)
+        }
+        Err(e) => println!("{:?}", e),
     }
 }

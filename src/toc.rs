@@ -6,10 +6,10 @@ extern crate serde_xml_rs;
 extern crate zip;
 
 use lazy_static::lazy_static;
+use log::{info, trace, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::io::prelude::*;
-use log::{info, trace, warn};
 
 /// API endpoint to get current table of contents.
 const API_TOC: &'static str = "https://www.gesetze-im-internet.de/gii-toc.xml";
@@ -69,7 +69,8 @@ impl TocItem {
 
     pub fn short(&self) -> Option<&str> {
         lazy_static! {
-            static ref REGEX: Regex = Regex::new(r"^http://www.gesetze-im-internet.de/(.+)/xml.zip$").unwrap();
+            static ref REGEX: Regex =
+                Regex::new(r"^http://www.gesetze-im-internet.de/(.+)/xml.zip$").unwrap();
         }
         REGEX
             .captures(&self.link)
