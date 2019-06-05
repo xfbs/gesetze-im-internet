@@ -1,13 +1,9 @@
-#[cfg(test)]
-mod tests;
-
-mod http_client;
+mod client;
 mod gesetz;
 mod toc;
 
 pub use toc::{Toc, TocItem};
 pub use gesetz::Gesetz;
 
-pub struct Gesetze {
-}
-
+#[cfg(test)]
+mod tests;
