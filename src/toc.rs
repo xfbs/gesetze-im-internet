@@ -125,6 +125,9 @@ fn test_can_compare_toc_item() {
 
 #[test]
 fn test_can_parse_short() {
-    let item = TocItem::new("Gesetz", "http://www.gesetze-im-internet.de/1-dm-goldm_nzg/xml.zip");
+    let item = TocItem::new(
+        "Gesetz",
+        "http://www.gesetze-im-internet.de/1-dm-goldm_nzg/xml.zip",
+    );
     assert_eq!(item.short(), Some("1-dm-goldm_nzg"));
 }
