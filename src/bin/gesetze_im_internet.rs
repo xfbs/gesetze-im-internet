@@ -1,10 +1,10 @@
 extern crate clap;
-extern crate lawapi_de;
+extern crate gesetze_im_internet;
 extern crate regex;
 extern crate stderrlog;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use lawapi_de::{Toc};
+use gesetze_im_internet::{Toc};
 use regex::Regex;
 
 fn main() {

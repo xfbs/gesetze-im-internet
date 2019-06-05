@@ -1,5 +1,5 @@
 [package]
-name = "lawapi-de"
+name = "gesetze_im_internet"
 version = "0.1.0"
 authors = ["Patrick Elsen <pelsen@xfbs.net>"]
 edition = "2018"
