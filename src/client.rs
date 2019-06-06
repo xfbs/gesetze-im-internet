@@ -59,6 +59,14 @@ impl Client {
         Client { base_url, reqwest }
     }
 
+    fn get(&self, url: Url) -> impl Future<Item = Response, Error = Error> {
+        info!("GET {}", url.as_str());
+        self.reqwest
+            .get(url.as_str())
+            .send()
+            .map_err(Error::from)
+    }
+
     pub fn get_toc(&self, path: &str) -> impl Future<Item = String, Error = Error> {
         let request_url = self.base_url.join(path);
         let client = self.reqwest.clone();
@@ -67,7 +75,6 @@ impl Client {
             .map_err(Error::from)
             .into_future()
             .and_then(move |url| {
-                info!("GET {}", url.as_str());
 
                 client.get(url.as_str()).send().map_err(Error::from)
             })
