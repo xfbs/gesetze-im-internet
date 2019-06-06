@@ -85,61 +85,61 @@ impl<'a, 'b> CLI<'a, 'b> {
 
         // run subcommands.
         match matches.subcommand() {
-            ("list", a) => list(&mut rt, a.ok_or(ErrorKind::NoArgMatches("list".into()))?),
-            ("get", a) => get(&mut rt, a.ok_or(ErrorKind::NoArgMatches("get".into()))?),
+            ("list", a) => Self::list(&mut rt, a.ok_or(ErrorKind::NoArgMatches("list".into()))?),
+            ("get", a) => Self::get(&mut rt, a.ok_or(ErrorKind::NoArgMatches("get".into()))?),
             (a, b) => Ok(()),
         }
     }
-}
 
-fn list(rt: &mut Runtime, matches: &ArgMatches) -> Result<()> {
-    let client = Client::default();
-    let task = client
-        .get_toc()
-        .map(|toc| {
-            /*
-            let regex = if let Some(search) = matches.unwrap().value_of("search") {
-                Regex::new(search).ok()
-            } else {
-                None
-            };
-            */
-            let regex: Option<Regex> = None;
+    fn list(rt: &mut Runtime, matches: &ArgMatches) -> Result<()> {
+        let client = Client::default();
+        let task = client
+            .get_toc()
+            .map(|toc| {
+                /*
+                let regex = if let Some(search) = matches.unwrap().value_of("search") {
+                    Regex::new(search).ok()
+                } else {
+                    None
+                };
+                */
+                let regex: Option<Regex> = None;
 
-            for item in toc.items {
-                if regex
-                    .as_ref()
-                    .map(|r| r.is_match(&item.title))
-                    .unwrap_or(true)
-                {
-                    println!("[{}] {}", item.short().unwrap_or("???"), item.title);
+                for item in toc.items {
+                    if regex
+                        .as_ref()
+                        .map(|r| r.is_match(&item.title))
+                        .unwrap_or(true)
+                    {
+                        println!("[{}] {}", item.short().unwrap_or("???"), item.title);
+                    }
                 }
-            }
-        })
-        .map_err(|err| {});
+            })
+            .map_err(|err| {});
 
-    let res = rt.block_on(task);
+        let res = rt.block_on(task);
 
-    Ok(())
-}
-
-fn get(_rt: &mut Runtime, matches: &ArgMatches) -> Result<()> {
-    let toc = Toc::fetch();
-    let name = matches.value_of("ID").ok_or(ErrorKind::NoArgMatches("ID".into()))?;
-
-    match toc {
-        Ok(toc) => {
-            let law = toc.items.iter().find(|ref i| i.short().unwrap() == name);
-
-            if let Some(law) = law {
-                match law.fetch() {
-                    Ok(law) => println!("{}", law),
-                    Err(e) => println!("{:?}", e),
-                }
-            }
-        }
-        Err(e) => println!("{:?}", e),
+        Ok(())
     }
 
-    Ok(())
+    fn get(_rt: &mut Runtime, matches: &ArgMatches) -> Result<()> {
+        let toc = Toc::fetch();
+        let name = matches.value_of("ID").ok_or(ErrorKind::NoArgMatches("ID".into()))?;
+
+        match toc {
+            Ok(toc) => {
+                let law = toc.items.iter().find(|ref i| i.short().unwrap() == name);
+
+                if let Some(law) = law {
+                    match law.fetch() {
+                        Ok(law) => println!("{}", law),
+                        Err(e) => println!("{:?}", e),
+                    }
+                }
+            }
+            Err(e) => println!("{:?}", e),
+        }
+
+        Ok(())
+    }
 }
