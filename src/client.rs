@@ -2,13 +2,22 @@ use crate::Toc;
 use error_chain::error_chain;
 use futures::{Future, IntoFuture, Stream};
 use log::{debug, info};
-use reqwest::r#async::{Client as ReqwestClient, Decoder, Response};
+use reqwest::r#async::{Client as ReqwestClient, Decoder, Response, ClientBuilder};
 use std::fmt;
 use std::io::Read;
 use url::Url;
+use lazy_static::lazy_static;
 
-/// API endpoint to get current table of contents.
-const API_TOC: &'static str = "https://www.gesetze-im-internet.de/gii-toc.xml";
+/// Base url of Gesetze im Internet API.
+const BASE_URL_STR: &'static str = "https://www.gesetze-im-internet.de";
+
+/// Endpoint to get the table of contents.
+const TOC_ENDPOINT: &'static str = "/gii-toc.xml";
+
+lazy_static! {
+    static ref BASE_URL: Url =
+        Url::parse(BASE_URL_STR).unwrap();
+}
 
 error_chain! {
     foreign_links {
@@ -20,18 +29,20 @@ error_chain! {
     }
 }
 
+/// Client
+///
+/// This is a Client used to connect to the GesetzeImInternet server and query things from it.
 #[derive(Debug, Clone)]
 pub struct Client {
     base_url: Url,
     reqwest: ReqwestClient,
 }
 
-/// Client
-///
-/// This is a Client used to connect to the GesetzeImInternet server and query things from it.
 impl Client {
-    pub fn new(base_url: Url, reqwest: ReqwestClient) -> Self {
-        Client { base_url, reqwest }
+    /// Try to create new client
+    pub fn new(base_url: Url) -> Result<Self> {
+        let reqwest = ClientBuilder::new().build()?;
+        Ok(Client { base_url, reqwest })
     }
 
     /// Creates a request for a given URL.
@@ -42,7 +53,7 @@ impl Client {
 
     /// Retrieve the table of contents.
     pub fn get_toc(&self, path: &str) -> impl Future<Item = Toc, Error = Error> {
-        let request_url = self.base_url.join(path);
+        let request_url = self.base_url.join(TOC_ENDPOINT);
         let me = self.clone();
 
         request_url
