@@ -44,7 +44,7 @@ fn main() {
     std::process::exit(ret);
 }
 
-impl<'a, 'b> CLI<'a, 'b> {
+impl<'a, 'b> CLI<'a, 'b> where 'a: 'b {
     pub fn new() -> CLI<'a, 'b> {
         let app = App::new("gesetze-im-internet")
             .setting(AppSettings::ArgRequiredElseHelp)
@@ -116,8 +116,8 @@ impl<'a, 'b> CLI<'a, 'b> {
         let task = client
             .get_toc()
             .map_err(Error::from)
-            .map(toc_get_items)
-            .and_then(print_toc_items);
+            .map(Self::toc_get_items)
+            .and_then(Self::print_toc_items);
 
         let ret = rt.block_on(task);
 
@@ -131,35 +131,33 @@ impl<'a, 'b> CLI<'a, 'b> {
 
         Ok(())
     }
-}
 
-// FIXME can't get these into the CLI struct without getting some shit about
-// lifetimes.
-fn print_toc_items(items: Vec<TocItem>) -> Result<()> {
-    // get the length of the longest short title
-    let max_short = items
-        .iter()
-        .map(|item| item.short().map(|s| s.len()).unwrap_or(0))
-        .max()
-        .unwrap_or(0);
+    fn print_toc_items(items: Vec<TocItem>) -> Result<()> {
+        // get the length of the longest short title
+        let max_short = items
+            .iter()
+            .map(|item| item.short().map(|s| s.len()).unwrap_or(0))
+            .max()
+            .unwrap_or(0);
 
-    // FIXME remove unwrap()
-    items
-        .iter()
-        .map(|item| (item.short().unwrap(), &item.title))
-        .map(|(short, title)| {
-            format!(
-                "{short:>pad$}: {title}",
-                pad = max_short,
-                short = short,
-                title = title
-            )
-        })
-        .for_each(|line| println!("{}", line));
+        // FIXME remove unwrap()
+        items
+            .iter()
+            .map(|item| (item.short().unwrap(), &item.title))
+            .map(|(short, title)| {
+                format!(
+                    "{short:>pad$}: {title}",
+                    pad = max_short,
+                    short = short,
+                    title = title
+                )
+            })
+            .for_each(|line| println!("{}", line));
 
-    Ok(())
-}
+        Ok(())
+    }
 
-fn toc_get_items(toc: Toc) -> Vec<TocItem> {
-    toc.items
+    fn toc_get_items(toc: Toc) -> Vec<TocItem> {
+        toc.items
+    }
 }
