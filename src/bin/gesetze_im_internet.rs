@@ -10,7 +10,7 @@ use futures::future::Future;
 use tokio::runtime::Runtime;
 
 fn main() {
-    let matches = App::new("lawapi_de")
+    let matches = App::new("gesetze-im-internet")
         .setting(AppSettings::ArgRequiredElseHelp)
         .arg(
             Arg::with_name("verbosity")
