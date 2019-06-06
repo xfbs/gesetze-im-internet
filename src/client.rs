@@ -26,6 +26,7 @@ error_chain! {
         ZipError(zip::result::ZipError);
         IOError(std::io::Error);
         ParseError(serde_xml_rs::Error);
+        DataParseError(std::string::FromUtf8Error);
     }
 }
 
@@ -63,7 +64,7 @@ impl Client {
             .into_future()
             .and_then(move |url| me.get(url))
             .and_then(Self::read_data)
-            .and_then(Self::extract_first_file)
+            .and_then(Self::data_to_string)
             .and_then(Self::parse_toc)
     }
 
@@ -94,8 +95,21 @@ impl Client {
             .map_err(Error::from)
     }
 
+    /// Reads data from an array of bytes into a string.
+    ///
+    /// Assumes the data is utf8 encoded. Might fail if illegal characters are encountered.
+    fn data_to_string(data: Vec<u8>) -> Result<String> {
+        String::from_utf8(data).map_err(Error::from)
+    }
+
     /// Parse a string into a Toc.
     fn parse_toc(s: String) -> Result<Toc> {
         Toc::from_str(&s).map_err(Error::from)
+    }
+}
+
+impl Default for Client {
+    fn default() -> Self {
+        Client::new(BASE_URL.clone()).unwrap()
     }
 }
