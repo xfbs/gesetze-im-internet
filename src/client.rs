@@ -1,11 +1,11 @@
 use crate::Toc;
+use error_chain::error_chain;
 use futures::{Future, IntoFuture, Stream};
 use log::{debug, info};
 use reqwest::r#async::{Client as ReqwestClient, Decoder, Response};
 use std::fmt;
 use std::io::Read;
 use url::Url;
-use error_chain::error_chain;
 
 /// API endpoint to get current table of contents.
 const API_TOC: &'static str = "https://www.gesetze-im-internet.de/gii-toc.xml";
@@ -83,7 +83,6 @@ impl Client {
 
     /// Parse a string into a Toc.
     fn parse_toc(s: String) -> Result<Toc> {
-        Toc::from_str(&s)
-            .map_err(Error::from)
+        Toc::from_str(&s).map_err(Error::from)
     }
 }
