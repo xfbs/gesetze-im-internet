@@ -5,6 +5,7 @@ use error_chain::error_chain;
 use futures::future::Future;
 use gesetze_im_internet::{Client, Toc, TocItem};
 use tokio::runtime::Runtime;
+use error_chain::ChainedError;
 
 error_chain! {
     links {
@@ -30,7 +31,17 @@ where
 }
 
 fn main() {
-    CLI::new().run().unwrap();
+    let ret: i32 = CLI::new().run()
+        .map(|_| 0)
+        .or_else(|err| {
+            println!("{}", err.display_chain().to_string());
+
+            // FIXME: return value depending on error type.
+            Ok(1) as Result<i32>
+        })
+        .unwrap();
+
+    std::process::exit(ret);
 }
 
 impl<'a, 'b> CLI<'a, 'b> {
@@ -96,11 +107,11 @@ impl<'a, 'b> CLI<'a, 'b> {
         match matches.subcommand() {
             ("list", a) => Self::list(&mut rt, a.ok_or(ErrorKind::NoArgMatches("list".into()))?),
             ("get", a) => Self::get(&mut rt, a.ok_or(ErrorKind::NoArgMatches("get".into()))?),
-            (a, b) => Ok(()),
+            (_, _) => Ok(()),
         }
     }
 
-    fn list(rt: &mut Runtime, matches: &ArgMatches) -> Result<()> {
+    fn list(rt: &mut Runtime, _matches: &ArgMatches) -> Result<()> {
         let client = Client::default();
         let task = client
             .get_toc()
@@ -114,24 +125,9 @@ impl<'a, 'b> CLI<'a, 'b> {
     }
 
     fn get(_rt: &mut Runtime, matches: &ArgMatches) -> Result<()> {
-        let toc = Toc::fetch();
-        let name = matches
+        let _name = matches
             .value_of("ID")
             .ok_or(ErrorKind::NoArgMatches("ID".into()))?;
-
-        match toc {
-            Ok(toc) => {
-                let law = toc.items.iter().find(|ref i| i.short().unwrap() == name);
-
-                if let Some(law) = law {
-                    match law.fetch() {
-                        Ok(law) => println!("{}", law),
-                        Err(e) => println!("{:?}", e),
-                    }
-                }
-            }
-            Err(e) => println!("{:?}", e),
-        }
 
         Ok(())
     }
@@ -148,7 +144,7 @@ fn print_toc_items(items: Vec<TocItem>) -> Result<()> {
         .unwrap_or(0);
 
     // FIXME remove unwrap()
-    let lines = items
+    items
         .iter()
         .map(|item| (item.short().unwrap(), &item.title))
         .map(|(short, title)| {
