@@ -4,8 +4,10 @@ extern crate regex;
 extern crate stderrlog;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use gesetze_im_internet::Toc;
+use gesetze_im_internet::{Client, Toc};
 use regex::Regex;
+use futures::future::Future;
+use tokio::runtime::Runtime;
 
 fn main() {
     let matches = App::new("lawapi_de")
@@ -67,15 +69,19 @@ fn main() {
 }
 
 fn list(matches: Option<&ArgMatches>) {
-    let toc = Toc::fetch();
-
-    match toc {
-        Ok(toc) => {
+    let mut rt = Runtime::new().unwrap();
+    let client = Client::default();
+    let task = client
+        .get_toc()
+        .map(|toc| {
+            /*
             let regex = if let Some(search) = matches.unwrap().value_of("search") {
                 Regex::new(search).ok()
             } else {
                 None
             };
+            */
+            let regex: Option<Regex> = None;
 
             for item in toc.items {
                 if regex
@@ -86,9 +92,10 @@ fn list(matches: Option<&ArgMatches>) {
                     println!("[{}] {}", item.short().unwrap_or("???"), item.title);
                 }
             }
-        }
-        Err(e) => println!("{:?}", e),
-    }
+        })
+        .map_err(|err| {});
+
+    let res = rt.block_on(task);
 }
 
 fn get(matches: Option<&ArgMatches>) {
