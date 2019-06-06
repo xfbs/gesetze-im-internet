@@ -5,29 +5,18 @@ use reqwest::r#async::{Client as ReqwestClient, Decoder, Response};
 use std::fmt;
 use std::io::Read;
 use url::Url;
-use quick_error::quick_error;
+use error_chain::error_chain;
 
 /// API endpoint to get current table of contents.
 const API_TOC: &'static str = "https://www.gesetze-im-internet.de/gii-toc.xml";
 
-quick_error! {
-    #[derive(Debug)]
-    pub enum Error {
-        ReqwestError(err: reqwest::Error) {
-            from()
-        }
-        UrlParseError(err: url::ParseError) {
-            from()
-        }
-        ZipError(err: zip::result::ZipError) {
-            from()
-        }
-        IOError(err: std::io::Error) {
-            from()
-        }
-        ParseError(err: serde_xml_rs::Error) {
-            from()
-        }
+error_chain! {
+    foreign_links {
+        ReqwestError(reqwest::Error);
+        UrlParseError(url::ParseError);
+        ZipError(zip::result::ZipError);
+        IOError(std::io::Error);
+        ParseError(serde_xml_rs::Error);
     }
 }
 
@@ -70,7 +59,7 @@ impl Client {
     }
 
     /// Extracts the first file from a Zip archive.
-    fn extract_first_file(data: Vec<u8>) -> Result<String, Error> {
+    fn extract_first_file(data: Vec<u8>) -> Result<String> {
         let reader = std::io::Cursor::new(data);
         let mut archive = zip::ZipArchive::new(reader)?;
 
@@ -93,7 +82,7 @@ impl Client {
     }
 
     /// Parse a string into a Toc.
-    fn parse_toc(s: String) -> Result<Toc, Error> {
+    fn parse_toc(s: String) -> Result<Toc> {
         Toc::from_str(&s)
             .map_err(Error::from)
     }
