@@ -39,7 +39,9 @@ pub struct Client {
 }
 
 impl Client {
-    /// Try to create new client
+    /// Try to create new client.
+    ///
+    /// Might fail if no TLS implementation is found.
     pub fn new(base_url: Url) -> Result<Self> {
         let reqwest = ClientBuilder::new().build()?;
         Ok(Client { base_url, reqwest })
@@ -52,7 +54,7 @@ impl Client {
     }
 
     /// Retrieve the table of contents.
-    pub fn get_toc(&self, path: &str) -> impl Future<Item = Toc, Error = Error> {
+    pub fn get_toc(&self) -> impl Future<Item = Toc, Error = Error> {
         let request_url = self.base_url.join(TOC_ENDPOINT);
         let me = self.clone();
 
@@ -65,6 +67,7 @@ impl Client {
             .and_then(Self::parse_toc)
     }
 
+    /// Get base url.
     pub fn base_url(&self) -> &Url {
         &self.base_url
     }
@@ -76,8 +79,7 @@ impl Client {
 
         debug_assert!(archive.len() == 1);
 
-        let mut file = archive.by_index(0).unwrap();
-
+        let mut file = archive.by_index(0)?;
         let mut content = String::new();
         file.read_to_string(&mut content)?;
         Ok(content)
