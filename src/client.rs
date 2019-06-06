@@ -1,3 +1,4 @@
+use crate::Toc;
 use futures::{Future, IntoFuture, Stream};
 use log::{debug, info};
 use reqwest::r#async::{Client as ReqwestClient, Decoder, Response};
@@ -14,6 +15,7 @@ pub enum Error {
     UrlParseError(url::ParseError),
     ZipError(zip::result::ZipError),
     IOError(std::io::Error),
+    ParseError(serde_xml_rs::Error),
 }
 
 impl From<reqwest::Error> for Error {
@@ -37,6 +39,12 @@ impl From<zip::result::ZipError> for Error {
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Error {
         Error::IOError(e)
+    }
+}
+
+impl From<serde_xml_rs::Error> for Error {
+    fn from(s: serde_xml_rs::Error) -> Error {
+        Error::ParseError(s)
     }
 }
 
@@ -64,7 +72,7 @@ impl Client {
         self.reqwest.get(url.as_str()).send().map_err(Error::from)
     }
 
-    pub fn get_toc(&self, path: &str) -> impl Future<Item = String, Error = Error> {
+    pub fn get_toc(&self, path: &str) -> impl Future<Item = Toc, Error = Error> {
         let request_url = self.base_url.join(path);
         let me = self.clone();
 
@@ -74,6 +82,7 @@ impl Client {
             .and_then(move |url| me.get(url))
             .and_then(Self::read_data)
             .and_then(Self::extract_first_file)
+            .and_then(Self::parse_toc)
     }
 
     pub fn base_url(&self) -> &Url {
@@ -99,6 +108,11 @@ impl Client {
         let body = std::mem::replace(res.body_mut(), Decoder::empty());
         body.concat2()
             .map(|s| s.into_iter().collect())
+            .map_err(Error::from)
+    }
+
+    fn parse_toc(s: String) -> Result<Toc, Error> {
+        Toc::from_str(&s)
             .map_err(Error::from)
     }
 }
