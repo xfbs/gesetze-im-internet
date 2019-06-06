@@ -1,11 +1,16 @@
+#![recursion_limit = "128"]
+
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use gesetze_im_internet::{Client, Toc};
-use regex::Regex;
-use futures::future::Future;
-use tokio::runtime::Runtime;
 use error_chain::error_chain;
+use futures::future::Future;
+use gesetze_im_internet::{Client, Toc, TocItem};
+use tokio::runtime::Runtime;
 
 error_chain! {
+    links {
+        ClientError(gesetze_im_internet::Error, gesetze_im_internet::ErrorKind);
+    }
+
     foreign_links {
         LoggerError(log::SetLoggerError);
         IOError(std::io::Error);
@@ -13,11 +18,15 @@ error_chain! {
 
     errors {
         NoArgMatches(s: String) {}
+        NoShortTitle(item: TocItem) {}
     }
 }
 
-pub struct CLI<'a, 'b> where 'a: 'b {
-    app: App<'a, 'b>
+pub struct CLI<'a, 'b>
+where
+    'a: 'b,
+{
+    app: App<'a, 'b>,
 }
 
 fn main() {
@@ -95,36 +104,20 @@ impl<'a, 'b> CLI<'a, 'b> {
         let client = Client::default();
         let task = client
             .get_toc()
-            .map(|toc| {
-                /*
-                let regex = if let Some(search) = matches.unwrap().value_of("search") {
-                    Regex::new(search).ok()
-                } else {
-                    None
-                };
-                */
-                let regex: Option<Regex> = None;
+            .map_err(Error::from)
+            .map(toc_get_items)
+            .and_then(print_toc_items);
 
-                for item in toc.items {
-                    if regex
-                        .as_ref()
-                        .map(|r| r.is_match(&item.title))
-                        .unwrap_or(true)
-                    {
-                        println!("[{}] {}", item.short().unwrap_or("???"), item.title);
-                    }
-                }
-            })
-            .map_err(|err| {});
+        let ret = rt.block_on(task);
 
-        let res = rt.block_on(task);
-
-        Ok(())
+        Ok(ret?)
     }
 
     fn get(_rt: &mut Runtime, matches: &ArgMatches) -> Result<()> {
         let toc = Toc::fetch();
-        let name = matches.value_of("ID").ok_or(ErrorKind::NoArgMatches("ID".into()))?;
+        let name = matches
+            .value_of("ID")
+            .ok_or(ErrorKind::NoArgMatches("ID".into()))?;
 
         match toc {
             Ok(toc) => {
@@ -142,4 +135,35 @@ impl<'a, 'b> CLI<'a, 'b> {
 
         Ok(())
     }
+}
+
+// FIXME can't get these into the CLI struct without getting some shit about
+// lifetimes.
+fn print_toc_items(items: Vec<TocItem>) -> Result<()> {
+    // get the length of the longest short title
+    let max_short = items
+        .iter()
+        .map(|item| item.short().map(|s| s.len()).unwrap_or(0))
+        .max()
+        .unwrap_or(0);
+
+    // FIXME remove unwrap()
+    let lines = items
+        .iter()
+        .map(|item| (item.short().unwrap(), &item.title))
+        .map(|(short, title)| {
+            format!(
+                "{short:>pad$}: {title}",
+                pad = max_short,
+                short = short,
+                title = title
+            )
+        })
+        .for_each(|line| println!("{}", line));
+
+    Ok(())
+}
+
+fn toc_get_items(toc: Toc) -> Vec<TocItem> {
+    toc.items
 }

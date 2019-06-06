@@ -1,12 +1,12 @@
 use crate::Toc;
 use error_chain::error_chain;
 use futures::{Future, IntoFuture, Stream};
+use lazy_static::lazy_static;
 use log::{debug, info};
-use reqwest::r#async::{Client as ReqwestClient, Decoder, Response, ClientBuilder};
+use reqwest::r#async::{Client as ReqwestClient, ClientBuilder, Decoder, Response};
 use std::fmt;
 use std::io::Read;
 use url::Url;
-use lazy_static::lazy_static;
 
 /// Base url of Gesetze im Internet API.
 const BASE_URL_STR: &'static str = "https://www.gesetze-im-internet.de";
@@ -15,8 +15,7 @@ const BASE_URL_STR: &'static str = "https://www.gesetze-im-internet.de";
 const TOC_ENDPOINT: &'static str = "/gii-toc.xml";
 
 lazy_static! {
-    static ref BASE_URL: Url =
-        Url::parse(BASE_URL_STR).unwrap();
+    static ref BASE_URL: Url = Url::parse(BASE_URL_STR).unwrap();
 }
 
 error_chain! {
