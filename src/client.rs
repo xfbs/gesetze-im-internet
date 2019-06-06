@@ -1,9 +1,9 @@
 use futures::{Future, IntoFuture, Stream};
-use log::{info, debug};
-use reqwest::r#async::{Client as ReqwestClient, Response};
+use log::{debug, info};
+use reqwest::r#async::{Client as ReqwestClient, Decoder, Response};
 use std::fmt;
-use url::Url;
 use std::io::Read;
+use url::Url;
 
 /// API endpoint to get current table of contents.
 const API_TOC: &'static str = "https://www.gesetze-im-internet.de/gii-toc.xml";
@@ -61,26 +61,19 @@ impl Client {
 
     fn get(&self, url: Url) -> impl Future<Item = Response, Error = Error> {
         info!("GET {}", url.as_str());
-        self.reqwest
-            .get(url.as_str())
-            .send()
-            .map_err(Error::from)
+        self.reqwest.get(url.as_str()).send().map_err(Error::from)
     }
 
     pub fn get_toc(&self, path: &str) -> impl Future<Item = String, Error = Error> {
         let request_url = self.base_url.join(path);
-        let client = self.reqwest.clone();
+        let me = self.clone();
 
         request_url
             .map_err(Error::from)
             .into_future()
-            .and_then(move |url| {
-
-                client.get(url.as_str()).send().map_err(Error::from)
-            })
+            .and_then(move |url| me.get(url))
             .and_then(Self::read_data)
             .and_then(Self::extract_first_file)
-            .map_err(Error::from)
     }
 
     pub fn base_url(&self) -> &Url {
@@ -101,10 +94,11 @@ impl Client {
         Ok(content)
     }
 
-    fn read_data(response: Response) -> Result<Vec<u8>, Error> {
-        //response.
-        let mut data = Vec::new();
-        //response.read_to_end(&mut data);
-        Ok(data)
+    fn read_data(res: Response) -> impl Future<Item = Vec<u8>, Error = Error> {
+        let mut res = res;
+        let body = std::mem::replace(res.body_mut(), Decoder::empty());
+        body.concat2()
+            .map(|s| s.into_iter().collect())
+            .map_err(Error::from)
     }
 }
