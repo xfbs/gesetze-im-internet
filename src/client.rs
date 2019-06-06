@@ -5,56 +5,31 @@ use reqwest::r#async::{Client as ReqwestClient, Decoder, Response};
 use std::fmt;
 use std::io::Read;
 use url::Url;
+use quick_error::quick_error;
 
 /// API endpoint to get current table of contents.
 const API_TOC: &'static str = "https://www.gesetze-im-internet.de/gii-toc.xml";
 
-#[derive(Debug)]
-pub enum Error {
-    ReqwestError(reqwest::Error),
-    UrlParseError(url::ParseError),
-    ZipError(zip::result::ZipError),
-    IOError(std::io::Error),
-    ParseError(serde_xml_rs::Error),
-}
-
-impl From<reqwest::Error> for Error {
-    fn from(e: reqwest::Error) -> Error {
-        Error::ReqwestError(e)
+quick_error! {
+    #[derive(Debug)]
+    pub enum Error {
+        ReqwestError(err: reqwest::Error) {
+            from()
+        }
+        UrlParseError(err: url::ParseError) {
+            from()
+        }
+        ZipError(err: zip::result::ZipError) {
+            from()
+        }
+        IOError(err: std::io::Error) {
+            from()
+        }
+        ParseError(err: serde_xml_rs::Error) {
+            from()
+        }
     }
 }
-
-impl From<url::ParseError> for Error {
-    fn from(e: url::ParseError) -> Error {
-        Error::UrlParseError(e)
-    }
-}
-
-impl From<zip::result::ZipError> for Error {
-    fn from(e: zip::result::ZipError) -> Error {
-        Error::ZipError(e)
-    }
-}
-
-impl From<std::io::Error> for Error {
-    fn from(e: std::io::Error) -> Error {
-        Error::IOError(e)
-    }
-}
-
-impl From<serde_xml_rs::Error> for Error {
-    fn from(s: serde_xml_rs::Error) -> Error {
-        Error::ParseError(s)
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl std::error::Error for Error {}
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -62,16 +37,21 @@ pub struct Client {
     reqwest: ReqwestClient,
 }
 
+/// Client
+///
+/// This is a Client used to connect to the GesetzeImInternet server and query things from it.
 impl Client {
     pub fn new(base_url: Url, reqwest: ReqwestClient) -> Self {
         Client { base_url, reqwest }
     }
 
+    /// Creates a request for a given URL.
     fn get(&self, url: Url) -> impl Future<Item = Response, Error = Error> {
         info!("GET {}", url.as_str());
         self.reqwest.get(url.as_str()).send().map_err(Error::from)
     }
 
+    /// Retrieve the table of contents.
     pub fn get_toc(&self, path: &str) -> impl Future<Item = Toc, Error = Error> {
         let request_url = self.base_url.join(path);
         let me = self.clone();
@@ -103,6 +83,7 @@ impl Client {
         Ok(content)
     }
 
+    /// Reads data from a response into a Vec<u8> (as a future).
     fn read_data(res: Response) -> impl Future<Item = Vec<u8>, Error = Error> {
         let mut res = res;
         let body = std::mem::replace(res.body_mut(), Decoder::empty());
@@ -111,6 +92,7 @@ impl Client {
             .map_err(Error::from)
     }
 
+    /// Parse a string into a Toc.
     fn parse_toc(s: String) -> Result<Toc, Error> {
         Toc::from_str(&s)
             .map_err(Error::from)
