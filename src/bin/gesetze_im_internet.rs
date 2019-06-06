@@ -1,75 +1,98 @@
-extern crate clap;
-extern crate gesetze_im_internet;
-extern crate regex;
-extern crate stderrlog;
-
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use gesetze_im_internet::{Client, Toc};
 use regex::Regex;
 use futures::future::Future;
 use tokio::runtime::Runtime;
+use error_chain::error_chain;
 
-fn main() {
-    let matches = App::new("gesetze-im-internet")
-        .setting(AppSettings::ArgRequiredElseHelp)
-        .arg(
-            Arg::with_name("verbosity")
-                .short("v")
-                .long("verbose")
-                .multiple(true)
-                .help("Increase message verbosity"),
-        )
-        .arg(
-            Arg::with_name("quiet")
-                .short("q")
-                .long("quiet")
-                .help("Silence all output"),
-        )
-        .subcommand(
-            SubCommand::with_name("list")
-                .about("lists laws by fetching the table of contents")
-                .arg(
-                    Arg::with_name("search")
-                        .short("s")
-                        .long("search")
-                        .help("searches for a string")
-                        .value_name("REGEX")
-                        .takes_value(true),
-                ),
-        )
-        .subcommand(
-            SubCommand::with_name("get")
-                .about("gets a law with the specified short id")
-                .arg(
-                    Arg::with_name("ID")
-                        .help("which law to fetch")
-                        .required(true)
-                        .index(1),
-                ),
-        )
-        .get_matches();
+error_chain! {
+    foreign_links {
+        LoggerError(log::SetLoggerError);
+        IOError(std::io::Error);
+    }
 
-    // setup logging.
-    let verbose = matches.occurrences_of("verbosity") as usize;
-    let quiet = matches.is_present("quiet");
-
-    stderrlog::new()
-        .module(module_path!())
-        .quiet(quiet)
-        .verbosity(verbose)
-        .init()
-        .unwrap();
-
-    // run subcommands.
-    match matches.subcommand() {
-        ("list", a) => list(a),
-        ("get", a) => get(a),
-        (a, b) => println!("{} {:?}", a, b),
+    errors {
+        NoArgMatches(s: String) {}
     }
 }
 
-fn list(matches: Option<&ArgMatches>) {
-    let mut rt = Runtime::new().unwrap();
+pub struct CLI<'a, 'b> where 'a: 'b {
+    app: App<'a, 'b>
+}
+
+fn main() {
+    CLI::new().run().unwrap();
+}
+
+impl<'a, 'b> CLI<'a, 'b> {
+    pub fn new() -> CLI<'a, 'b> {
+        let app = App::new("gesetze-im-internet")
+            .setting(AppSettings::ArgRequiredElseHelp)
+            .arg(
+                Arg::with_name("verbosity")
+                    .short("v")
+                    .long("verbose")
+                    .multiple(true)
+                    .help("Increase message verbosity"),
+            )
+            .arg(
+                Arg::with_name("quiet")
+                    .short("q")
+                    .long("quiet")
+                    .help("Silence all output"),
+            )
+            .subcommand(
+                SubCommand::with_name("list")
+                    .about("lists laws by fetching the table of contents")
+                    .arg(
+                        Arg::with_name("search")
+                            .short("s")
+                            .long("search")
+                            .help("searches for a string")
+                            .value_name("REGEX")
+                            .takes_value(true),
+                    ),
+            )
+            .subcommand(
+                SubCommand::with_name("get")
+                    .about("gets a law with the specified short id")
+                    .arg(
+                        Arg::with_name("ID")
+                            .help("which law to fetch")
+                            .required(true)
+                            .index(1),
+                    ),
+            );
+
+        CLI { app }
+    }
+
+    pub fn run(self) -> Result<()> {
+        let matches = self.app.get_matches();
+
+        // setup logging.
+        let verbose = matches.occurrences_of("verbosity") as usize;
+        let quiet = matches.is_present("quiet");
+
+        stderrlog::new()
+            .module(module_path!())
+            .quiet(quiet)
+            .verbosity(verbose)
+            .init()?;
+
+        // create runtime.
+        let mut rt = Runtime::new()?;
+
+        // run subcommands.
+        match matches.subcommand() {
+            ("list", a) => list(&mut rt, a.ok_or(ErrorKind::NoArgMatches("list".into()))?),
+            ("get", a) => get(&mut rt, a.ok_or(ErrorKind::NoArgMatches("get".into()))?),
+            (a, b) => Ok(()),
+        }
+    }
+}
+
+fn list(rt: &mut Runtime, matches: &ArgMatches) -> Result<()> {
     let client = Client::default();
     let task = client
         .get_toc()
@@ -96,11 +119,13 @@ fn list(matches: Option<&ArgMatches>) {
         .map_err(|err| {});
 
     let res = rt.block_on(task);
+
+    Ok(())
 }
 
-fn get(matches: Option<&ArgMatches>) {
+fn get(_rt: &mut Runtime, matches: &ArgMatches) -> Result<()> {
     let toc = Toc::fetch();
-    let name = matches.unwrap().value_of("ID").unwrap();
+    let name = matches.value_of("ID").ok_or(ErrorKind::NoArgMatches("ID".into()))?;
 
     match toc {
         Ok(toc) => {
@@ -115,4 +140,6 @@ fn get(matches: Option<&ArgMatches>) {
         }
         Err(e) => println!("{:?}", e),
     }
+
+    Ok(())
 }
