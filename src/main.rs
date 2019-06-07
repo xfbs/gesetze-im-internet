@@ -2,10 +2,10 @@
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use error_chain::error_chain;
+use error_chain::ChainedError;
 use futures::future::Future;
 use gesetze_im_internet::{Client, Toc, TocItem};
 use tokio::runtime::Runtime;
-use error_chain::ChainedError;
 
 error_chain! {
     links {
@@ -31,7 +31,8 @@ where
 }
 
 fn main() {
-    let ret: i32 = CLI::new().run()
+    let ret: i32 = CLI::new()
+        .run()
         .map(|_| 0)
         .or_else(|err| {
             println!("{}", err.display_chain().to_string());
@@ -44,7 +45,10 @@ fn main() {
     std::process::exit(ret);
 }
 
-impl<'a, 'b> CLI<'a, 'b> where 'a: 'b {
+impl<'a, 'b> CLI<'a, 'b>
+where
+    'a: 'b,
+{
     pub fn new() -> CLI<'a, 'b> {
         let app = App::new("gesetze-im-internet")
             .setting(AppSettings::ArgRequiredElseHelp)
