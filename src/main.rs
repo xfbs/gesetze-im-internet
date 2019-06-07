@@ -128,12 +128,32 @@ where
         Ok(ret?)
     }
 
-    fn get(_rt: &mut Runtime, matches: &ArgMatches) -> Result<()> {
-        let _name = matches
+    fn get(rt: &mut Runtime, matches: &ArgMatches) -> Result<()> {
+        let client = Client::default();
+        let name: String = matches
             .value_of("ID")
-            .ok_or(ErrorKind::NoArgMatches("ID".into()))?;
+            .ok_or(ErrorKind::NoArgMatches("ID".into()))?
+            .into();
 
-        Ok(())
+        let task = client
+            .get_toc()
+            .map_err(Error::from)
+            .map(Self::toc_get_items)
+            .map(Self::find_item(name))
+            .map(|item| ());
+
+        let ret = rt.block_on(task);
+
+        Ok(ret?)
+    }
+
+    fn find_item(name: String) -> impl Fn(Vec<TocItem>) -> TocItem {
+        |items| {
+            items
+                .into_iter()
+                .find(|i| i.short() == Some("abc".into()).unwrap())
+                .unwrap()
+        }
     }
 
     fn print_toc_items(items: Vec<TocItem>) -> Result<()> {
