@@ -3,7 +3,7 @@ use log::info;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::io::prelude::*;
-use url::{Url, ParseError};
+use url::{ParseError, Url};
 
 mod item;
 pub use item::TocItem;
@@ -23,7 +23,9 @@ impl Toc {
     }
 
     /// Load table of contents from reader.
-    pub fn from_reader<'de, R: Read, T: Deserialize<'de>>(reader: R) -> Result<Self, serde_xml_rs::Error> {
+    pub fn from_reader<'de, R: Read, T: Deserialize<'de>>(
+        reader: R,
+    ) -> Result<Self, serde_xml_rs::Error> {
         serde_xml_rs::from_reader(reader)
     }
 
@@ -38,4 +40,3 @@ impl Default for Toc {
         Toc { items: Vec::new() }
     }
 }
-
