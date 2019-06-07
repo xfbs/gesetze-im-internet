@@ -3,9 +3,7 @@ use log::info;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::io::prelude::*;
-
-/// API endpoint to get current table of contents.
-const API_TOC: &'static str = "https://www.gesetze-im-internet.de/gii-toc.xml";
+use url::{Url, ParseError};
 
 /// Entry in the table of content of current laws.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -67,26 +65,14 @@ impl TocItem {
             .captures(&self.link)
             .and_then(|c| c.get(1).map(|s| s.as_str()))
     }
+
+    /// Parses URL of this TocItem.
+    pub fn url(&self) -> Result<Url, ParseError> {
+        Url::parse(&self.link)
+    }
 }
 
 impl Toc {
-    /// Fetch the current table of contents from the server.
-    pub fn fetch_toc() -> Result<String, Box<::std::error::Error>> {
-        info!("fetching toc");
-        let response = reqwest::get(API_TOC)?.text().map_err(|e| e.into());
-        info!("got response");
-        response
-    }
-
-    /// Fetch the current table of contents from the server and parse it, yielding a Toc.
-    pub fn fetch() -> Result<Self, Box<::std::error::Error>> {
-        let toc = Self::fetch_toc();
-        info!("parsing xml...");
-        let toc = toc.and_then(|s| serde_xml_rs::from_str(&s).map_err(|e| e.into()));
-        info!("done parsing xml.");
-        toc
-    }
-
     /// Load table of contents from string.
     pub fn from_str(input: &str) -> Result<Self, serde_xml_rs::Error> {
         serde_xml_rs::from_str(input)
@@ -98,7 +84,13 @@ impl Toc {
     }
 
     /// Create new empty table of contents
-    pub fn new() -> Self {
+    pub fn new(items: Vec<TocItem>) -> Self {
+        Toc { items }
+    }
+}
+
+impl Default for Toc {
+    fn default() -> Self {
         Toc { items: Vec::new() }
     }
 }
