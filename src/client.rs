@@ -2,9 +2,8 @@ use crate::{Toc, TocItem};
 use error_chain::error_chain;
 use futures::{Future, IntoFuture, Stream};
 use lazy_static::lazy_static;
-use log::{debug, info};
+use log::info;
 use reqwest::r#async::{Client as ReqwestClient, ClientBuilder, Decoder, Response};
-use std::fmt;
 use std::io::Read;
 use url::Url;
 

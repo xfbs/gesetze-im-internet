@@ -1,9 +1,5 @@
-use lazy_static::lazy_static;
-use log::info;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::io::prelude::*;
-use url::{ParseError, Url};
 
 mod item;
 pub use item::TocItem;
