@@ -98,3 +98,13 @@ fn test_can_parse_short() {
     );
     assert_eq!(item.short(), Some("1-dm-goldm_nzg"));
 }
+
+#[test]
+fn test_can_parse_url() {
+    let item = TocItem::new(
+        "Gesetz".into(),
+        "http://www.gesetze-im-internet.de/1-dm-goldm_nzg/xml.zip".into(),
+    );
+    let url = item.url().unwrap();
+    assert_eq!(url.host_str(), Some("www.gesetze-im-internet.de"));
+} 
