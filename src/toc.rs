@@ -95,6 +95,12 @@ impl Toc {
         serde_xml_rs::from_str(input)
     }
 
+    /// Load table of contents from reader.
+    pub fn from_reader<'de, R: Read, T: Deserialize<'de>>(reader: R) -> Result<Self, serde_xml_rs::Error) {
+        serde_xml_rs::from_reader(reader)
+    }
+
+
     /// Create new empty table of contents
     pub fn new() -> Self {
         Toc { items: Vec::new() }
