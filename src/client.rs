@@ -1,4 +1,4 @@
-use crate::Toc;
+use crate::{Toc, TocItem};
 use error_chain::error_chain;
 use futures::{Future, IntoFuture, Stream};
 use lazy_static::lazy_static;
@@ -65,6 +65,17 @@ impl Client {
             .and_then(Self::read_data)
             .and_then(Self::data_to_string)
             .and_then(Self::parse_toc)
+    }
+
+    pub fn get_toc_item(&self, item: &TocItem) -> impl Future<Item = String, Error = Error> {
+        let me = self.clone();
+
+        item.url()
+            .map_err(Error::from)
+            .into_future()
+            .and_then(move |url| me.get(url))
+            .and_then(Self::read_data)
+            .and_then(Self::extract_first_file)
     }
 
     /// Get base url.
