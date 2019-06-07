@@ -26,11 +26,8 @@ pub struct Toc {
 
 impl TocItem {
     /// Create new TocItem with given properties.
-    pub fn new(title: &str, link: &str) -> Self {
-        Self {
-            title: title.into(),
-            link: link.into(),
-        }
+    pub fn new(title: String, link: String) -> Self {
+        Self { title, link }
     }
 
     /// Fetch this law.
@@ -96,10 +93,9 @@ impl Toc {
     }
 
     /// Load table of contents from reader.
-    pub fn from_reader<'de, R: Read, T: Deserialize<'de>>(reader: R) -> Result<Self, serde_xml_rs::Error) {
+    pub fn from_reader<'de, R: Read, T: Deserialize<'de>>(reader: R) -> Result<Self, serde_xml_rs::Error> {
         serde_xml_rs::from_reader(reader)
     }
-
 
     /// Create new empty table of contents
     pub fn new() -> Self {
@@ -109,16 +105,16 @@ impl Toc {
 
 #[test]
 fn test_can_create_toc_item() {
-    let gesetz = TocItem::new("Abgeordnetengesetz", "ABG");
+    let gesetz = TocItem::new("Abgeordnetengesetz".into(), "ABG".into());
     assert_eq!(gesetz.title, "Abgeordnetengesetz");
     assert_eq!(gesetz.link, "ABG");
 }
 
 #[test]
 fn test_can_compare_toc_item() {
-    let gesetz_a = TocItem::new("A", "A");
-    let gesetz_b = TocItem::new("B", "A");
-    let gesetz_c = TocItem::new("A", "C");
+    let gesetz_a = TocItem::new("A".into(), "A".into());
+    let gesetz_b = TocItem::new("B".into(), "A".into());
+    let gesetz_c = TocItem::new("A".into(), "C".into());
 
     assert_ne!(gesetz_a, gesetz_b);
     assert_ne!(gesetz_a, gesetz_c);
@@ -132,8 +128,8 @@ fn test_can_compare_toc_item() {
 #[test]
 fn test_can_parse_short() {
     let item = TocItem::new(
-        "Gesetz",
-        "http://www.gesetze-im-internet.de/1-dm-goldm_nzg/xml.zip",
+        "Gesetz".into(),
+        "http://www.gesetze-im-internet.de/1-dm-goldm_nzg/xml.zip".into(),
     );
     assert_eq!(item.short(), Some("1-dm-goldm_nzg"));
 }
