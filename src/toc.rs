@@ -28,33 +28,6 @@ impl TocItem {
         Self { title, link }
     }
 
-    /// Fetch this law.
-    pub fn fetch(&self) -> Result<String, Box<::std::error::Error>> {
-        info!("fetching {}", &self.link);
-        let mut response = reqwest::get(&self.link)?;
-        info!("got response");
-        let mut body = Vec::new();
-        response.read_to_end(&mut body)?;
-        let reader = std::io::Cursor::new(body);
-        let mut archive = zip::ZipArchive::new(reader)?;
-
-        for i in 0..archive.len() {
-            let file = archive.by_index(i).unwrap();
-            println!("Filename: {}", file.name());
-            let first_byte = file.bytes().next().unwrap()?;
-            println!("{}", first_byte);
-        }
-
-        debug_assert!(archive.len() == 1);
-
-        let mut file = archive.by_index(0).unwrap();
-
-        let mut content = String::new();
-        file.read_to_string(&mut content)?;
-
-        Ok(content)
-    }
-
     /// Extract law abbreviation from URL.
     pub fn short(&self) -> Option<&str> {
         lazy_static! {
