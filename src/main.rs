@@ -20,6 +20,7 @@ error_chain! {
     errors {
         NoArgMatches(s: String) {}
         NoShortTitle(item: TocItem) {}
+        ItemNotFound(name: String) {}
     }
 }
 
@@ -139,7 +140,8 @@ where
             .get_toc()
             .map_err(Error::from)
             .map(Self::toc_get_items)
-            .map(Self::find_item(name))
+            .and_then(Self::item_find(name))
+            .and_then(move |item| client.clone().get_toc_item(&item).map_err(Error::from))
             .map(|item| ());
 
         let ret = rt.block_on(task);
@@ -147,14 +149,20 @@ where
         Ok(ret?)
     }
 
-    fn find_item(name: String) -> impl Fn(Vec<TocItem>) -> TocItem {
-        |items| {
+    fn item_find(name: String) -> impl FnOnce(Vec<TocItem>) -> Result<TocItem> {
+        move |items| {
             items
                 .into_iter()
-                .find(|i| i.short() == Some("abc".into()).unwrap())
-                .unwrap()
+                .find(|i| i.short() == Some(&name.clone()))
+                .ok_or(ErrorKind::ItemNotFound(name.clone()).into())
         }
     }
+
+    /*
+    fn item_get(client: Client) -> impl FnOnce(TocItem) -> impl Future<Item = String, Error = Error> {
+        move |item| client.clone().get_toc_item(&item)
+    }
+    */
 
     fn print_toc_items(items: Vec<TocItem>) -> Result<()> {
         // get the length of the longest short title
